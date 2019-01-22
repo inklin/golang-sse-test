@@ -20,7 +20,7 @@ func main() {
 	// start a new stream of events
 	stream := eventsource.NewStream()
 
-	// create arbitrary topics
+	// create arbitrary topic names
 	topic := "topic_1"
 	topic2 := "topic_2"
 
