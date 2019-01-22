@@ -1,14 +1,57 @@
 <!DOCTYPE html>
 <html>
-<head>
-<title>Simple SSE</title>
-<script>
-</script>
-</head>
-<body>
-<h2>Messages in First Room</h2>
-<li id="firstRoom"></li>
-<h2>Messages in Second Room</h2>
-<li id="secondRoom"></li>
-</body>
+  <head>
+    <title>Simple SSE Test App</title>
+  </head>
+  <body>
+    <div id="topicSelector">
+      <form id="topicForm">
+        <select multiple id="topicSelect">
+          <option value="topic_1">Topic 1</option>
+          <option value="topic_2">Topic 2</option>
+        </select>
+        <input type="submit" id="topicSubmitBtn" />
+      </form>
+      <p>Hold down the Command button to select multiple options.</p>
+    </div>
+    <h3>Topics subscribed: <span id="topicsSubscribed"></span></h3>
+    <p>All events received from server:</p>
+    <li id="eventList"></li>
+  </body>
+  <script>
+    const eventSourceURL = "http://localhost:3000/event-source";
+    const form = document.getElementById("topicForm");
+    const formBtn = document.getElementById("topicSubmitBtn");
+    const eventList = document.getElementById("eventList");
+
+    form.addEventListener("submit", function(event) {
+      event.preventDefault();
+      const topicSelector = document.getElementById("topicSelector");
+      const topics = Array.from(
+        form.querySelectorAll("option:checked"),
+        e => e.value
+      );
+      const topicsString = topics.join(",");
+      const connectionURL = eventSourceURL + "?topics=" + topicsString;
+
+      // hide the form
+      topicSelector.style.display = "none";
+      const topicsSubscribed = (document.getElementById(
+        "topicsSubscribed"
+      ).innerHTML = topicsString);
+
+      // create new sse connection
+      const eventSource = new EventSource(connectionURL);
+
+      // display received events
+      eventSource.onmessage = e => {
+        var newElement = document.createElement("li");
+        var eventObj = JSON.parse(e.data);
+        newElement.innerHTML = `message: ${eventObj.message}, timestamp: ${
+          eventObj.timestamp
+        }`;
+        eventList.appendChild(newElement);
+      };
+    });
+  </script>
 </html>
