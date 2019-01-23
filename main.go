@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/AndrewBurian/eventsource"
+	redisPubSub "github.com/inklin/golang-sse-test/redis"
 )
 
 const (
@@ -15,39 +15,13 @@ const (
 )
 
 func main() {
-	fmt.Printf("Starting server on port %v", serverPort)
 
 	// start a new stream of events
 	stream := eventsource.NewStream()
 
-	// create arbitrary topic names
-	topic := "topic_1"
-	topic2 := "topic_2"
-
-	// send event source data events every second
-	go func(s *eventsource.Stream) {
-		for {
-			time.Sleep(time.Second)
-
-			// broadcast tick event to every client
-			tickEvent := eventsource.Event{}
-			tickMessage := "TICK"
-			tickEvent.Data(`{"message":"` + tickMessage + `"}`)
-			stream.Broadcast(&tickEvent)
-
-			// publish to topic_1
-			// only sent to clients who are subscribed to this topic
-			topicEvent := eventsource.Event{}
-			topicEvent.Data(`{"message":"Hello from Topic 1","timestamp":"` + time.Now().String() + `"}`)
-			stream.Publish(topic, &topicEvent)
-
-			// publish to topic_2
-			// only sent to clients who are subscribed to this topic
-			topicTwoEvent := eventsource.Event{}
-			topicTwoEvent.Data(`{"message":"Hello from Topic 2","timestamp":"` + time.Now().String() + `"}`)
-			stream.Publish(topic2, &topicTwoEvent)
-		}
-	}(stream)
+	// set up Redis Pub
+	fmt.Printf("Setting up Redis PubSub\n")
+	go redisPubSub.Start(stream)
 
 	http.Handle("/", http.FileServer(http.Dir("./static")))
 
@@ -74,6 +48,8 @@ func main() {
 		stream.Remove(client)
 		fmt.Println("client removed")
 	})
+
+	fmt.Printf("Starting server on port %v\n", serverPort)
 
 	http.ListenAndServe(":"+strconv.Itoa(serverPort), nil)
 }
